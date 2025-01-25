@@ -9,45 +9,53 @@ import { Label } from "@/components/ui/label"
 import { submitTicket } from "../lib/api"
 import { enhanceTicketDescription, analyzeScreenshot } from "../utils/geminiApi"
 import { useToast } from "@/components/ui/use-toast"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+
+const ticketSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  location: z.string().min(1, "Location is required"),
+  screenshot: z.instanceof(File).optional(),
+})
 
 export default function SubmitTicket() {
   const router = useRouter()
   const { toast } = useToast()
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(ticketSchema),
+  })
   const [enhancedDescription, setEnhancedDescription] = useState("")
-  const [location, setLocation] = useState("")
-  const [screenshot, setScreenshot] = useState<File | null>(null)
   const [isEnhancing, setIsEnhancing] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (title && (description || enhancedDescription) && location) {
-      try {
-        await submitTicket({
-          title,
-          description: enhancedDescription || description,
-          location,
-          screenshot,
-        })
-        toast({
-          title: "Ticket Submitted",
-          description: "Your accessibility issue has been successfully reported.",
-        })
-        router.push("/")
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to submit ticket. Please try again.",
-          variant: "destructive",
-        })
-      }
+  const onSubmit = async (data) => {
+    try {
+      await submitTicket({
+        ...data,
+        description: enhancedDescription || data.description,
+      })
+      toast({
+        title: "Ticket Submitted",
+        description: "Your accessibility issue has been successfully reported.",
+      })
+      router.push("/")
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit ticket. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
-  const handleEnhanceDescription = async () => {
+  const handleEnhanceDescription = async (description) => {
     if (description) {
       setIsEnhancing(true)
       try {
@@ -69,7 +77,7 @@ export default function SubmitTicket() {
     }
   }
 
-  const handleScreenshotAnalysis = async () => {
+  const handleScreenshotAnalysis = async (screenshot) => {
     if (screenshot) {
       setIsAnalyzing(true)
       try {
@@ -99,18 +107,20 @@ export default function SubmitTicket() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Submit New Accessibility Issue</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <Label htmlFor="title">Title</Label>
-          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          <Input id="title" {...register("title")} />
+          {errors.title && <p className="text-red-500">{errors.title.message}</p>}
         </div>
         <div>
           <Label htmlFor="description">Description</Label>
-          <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
+          <Textarea id="description" {...register("description")} />
+          {errors.description && <p className="text-red-500">{errors.description.message}</p>}
           <Button
             type="button"
-            onClick={handleEnhanceDescription}
-            disabled={!description || isEnhancing}
+            onClick={() => handleEnhanceDescription(watch("description"))}
+            disabled={!watch("description") || isEnhancing}
             className="mt-2"
           >
             {isEnhancing ? "Enhancing..." : "Enhance Description with AI"}
@@ -129,18 +139,14 @@ export default function SubmitTicket() {
         )}
         <div>
           <Label htmlFor="location">Location</Label>
-          <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} required />
+          <Input id="location" {...register("location")} />
+          {errors.location && <p className="text-red-500">{errors.location.message}</p>}
         </div>
         <div>
           <Label htmlFor="screenshot">Screenshot</Label>
-          <Input
-            id="screenshot"
-            type="file"
-            onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
-            accept="image/*"
-          />
-          {screenshot && (
-            <Button type="button" onClick={handleScreenshotAnalysis} disabled={isAnalyzing} className="mt-2">
+          <Input id="screenshot" type="file" {...register("screenshot")} accept="image/*" />
+          {watch("screenshot") && (
+            <Button type="button" onClick={() => handleScreenshotAnalysis(watch("screenshot"))} disabled={isAnalyzing} className="mt-2">
               {isAnalyzing ? "Analyzing..." : "Analyze Screenshot"}
             </Button>
           )}
@@ -156,4 +162,3 @@ export default function SubmitTicket() {
     </div>
   )
 }
-

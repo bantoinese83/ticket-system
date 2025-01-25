@@ -11,6 +11,15 @@ import { useToast } from "@/components/ui/use-toast"
 import { Pencil, Trash2, UserPlus } from "lucide-react"
 import type { User, UserRole } from "../lib/api"
 import { useAuth } from "../hooks/use-auth"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+
+const userSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  role: z.enum(["user", "admin"]),
+})
 
 export function UserManagement() {
   const { can } = useAuth()
@@ -24,8 +33,16 @@ export function UserManagement() {
   const status = useAppSelector((state) => state.users.status)
   const { toast } = useToast()
 
-  const [newUser, setNewUser] = useState({ name: "", email: "", role: "user" as UserRole })
   const [editingUser, setEditingUser] = useState<User | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: zodResolver(userSchema),
+  })
 
   useEffect(() => {
     if (status === "idle") {
@@ -33,10 +50,10 @@ export function UserManagement() {
     }
   }, [status, dispatch])
 
-  const handleAddUser = async () => {
+  const handleAddUser = async (data) => {
     try {
-      await dispatch(addUser(newUser)).unwrap()
-      setNewUser({ name: "", email: "", role: "user" })
+      await dispatch(addUser(data)).unwrap()
+      reset()
       toast({
         title: "User Added",
         description: "New user has been successfully added.",
@@ -65,18 +82,18 @@ export function UserManagement() {
           <CardTitle>Add New User</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col space-y-2">
+          <form onSubmit={handleSubmit(handleAddUser)} className="flex flex-col space-y-2">
             <Input
               placeholder="Name"
-              value={newUser.name}
-              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              {...register("name")}
             />
+            {errors.name && <p className="text-red-500">{errors.name.message}</p>}
             <Input
               placeholder="Email"
-              value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              {...register("email")}
             />
-            <Select value={newUser.role} onValueChange={(value) => setNewUser({ ...newUser, role: value as UserRole })}>
+            {errors.email && <p className="text-red-500">{errors.email.message}</p>}
+            <Select {...register("role")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
@@ -85,10 +102,11 @@ export function UserManagement() {
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleAddUser}>
+            {errors.role && <p className="text-red-500">{errors.role.message}</p>}
+            <Button type="submit">
               <UserPlus className="mr-2 h-4 w-4" /> Add User
             </Button>
-          </div>
+          </form>
         </CardContent>
       </Card>
 
