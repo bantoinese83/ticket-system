@@ -9,6 +9,7 @@ import { Breadcrumbs } from "./components/breadcrumbs"
 import "./globals.css"
 import {ThemeProvider} from "@/app/components/theme-provider";
 import React from "react";
+import { SessionProvider } from "next-auth/react";
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,16 +23,18 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Provider store={store}>
-            <div className="min-h-screen bg-background">
-              <NavBar />
-              <main className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
-                <Breadcrumbs />
-                {children}
-              </main>
-            </div>
-            <Toaster />
-          </Provider>
+          <SessionProvider>
+            <Provider store={store}>
+              <div className="min-h-screen bg-background">
+                <NavBar />
+                <main className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                  <Breadcrumbs />
+                  {children}
+                </main>
+              </div>
+              <Toaster />
+            </Provider>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  role      String
+  createdAt DateTime @default(now())
+  accounts  Account[]
+  sessions  Session[]
+}
+
+model Account {
+  id                 Int      @id @default(autoincrement())
+  userId             Int
+  provider           String
+  providerAccountId  String
+  refreshToken       String?  @map("refresh_token")
+  accessToken        String?  @map("access_token")
+  expiresAt          Int?     @map("expires_at")
+  tokenType          String?  @map("token_type")
+  scope              String?
+  idToken            String?  @map("id_token")
+  sessionState       String?  @map("session_state")
+  createdAt          DateTime @default(now())
+  user               User     @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  sessionToken String   @unique
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([identifier, token])
+}
