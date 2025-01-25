@@ -82,33 +82,53 @@ let tickets: Ticket[] = [
 ]
 
 export async function getTickets(): Promise<Ticket[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve([...tickets]), 500)
-  })
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve([...tickets]), 500)
+    })
+  } catch (error) {
+    console.error("Error fetching tickets:", error)
+    throw new Error("Failed to fetch tickets")
+  }
 }
 
 export async function getTicket(id: TicketId): Promise<Ticket | undefined> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const ticket = tickets.find((ticket) => ticket.id === id)
-      resolve(ticket ? { ...ticket } : undefined)
-    }, 500)
-  })
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const ticket = tickets.find((ticket) => ticket.id === id)
+        resolve(ticket ? { ...ticket } : undefined)
+      }, 500)
+    })
+  } catch (error) {
+    console.error(`Error fetching ticket with ID ${id}:`, error)
+    throw new Error("Failed to fetch ticket")
+  }
 }
 
 export async function getUsers(): Promise<User[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve([...users]), 500)
-  })
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve([...users]), 500)
+    })
+  } catch (error) {
+    console.error("Error fetching users:", error)
+    throw new Error("Failed to fetch users")
+  }
 }
 
 export async function getUser(id: UserId): Promise<User | undefined> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const user = users.find((user) => user.id === id)
-      resolve(user ? { ...user } : undefined)
-    }, 500)
-  })
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const user = users.find((user) => user.id === id)
+        resolve(user ? { ...user } : undefined)
+      }, 500)
+    })
+  } catch (error) {
+    console.error(`Error fetching user with ID ${id}:`, error)
+    throw new Error("Failed to fetch user")
+  }
 }
 
 export interface SubmitTicketData {
@@ -121,23 +141,28 @@ export interface SubmitTicketData {
 }
 
 export async function submitTicket(ticketData: SubmitTicketData): Promise<Ticket> {
-  const newTicket: Ticket = {
-    id: tickets.length + 1,
-    ...ticketData,
-    status: "open",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    assignedTo: null,
-    comments: [],
-    statusHistory: [],
-  }
+  try {
+    const newTicket: Ticket = {
+      id: tickets.length + 1,
+      ...ticketData,
+      status: "open",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      assignedTo: null,
+      comments: [],
+      statusHistory: [],
+    }
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      tickets = [...tickets, newTicket]
-      resolve({ ...newTicket })
-    }, 500)
-  })
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        tickets = [...tickets, newTicket]
+        resolve({ ...newTicket })
+      }, 500)
+    })
+  } catch (error) {
+    console.error("Error submitting ticket:", error)
+    throw new Error("Failed to submit ticket")
+  }
 }
 
 export async function updateTicketStatus(
@@ -145,129 +170,159 @@ export async function updateTicketStatus(
   status: TicketStatus,
   userId: UserId,
 ): Promise<Ticket | undefined> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const ticketIndex = tickets.findIndex((t) => t.id === id)
-      if (ticketIndex !== -1) {
-        const now = new Date().toISOString()
-        const statusChange: StatusChange = {
-          status,
-          changedAt: now,
-          changedBy: userId,
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const ticketIndex = tickets.findIndex((t) => t.id === id)
+        if (ticketIndex !== -1) {
+          const now = new Date().toISOString()
+          const statusChange: StatusChange = {
+            status,
+            changedAt: now,
+            changedBy: userId,
+          }
+          // Create a new ticket object with the updated status and history
+          const updatedTicket = {
+            ...tickets[ticketIndex],
+            status: status,
+            updatedAt: now,
+            statusHistory: [...(tickets[ticketIndex].statusHistory || []), statusChange],
+          }
+          // Replace the old ticket with the updated one
+          tickets[ticketIndex] = updatedTicket
+          resolve(updatedTicket)
+        } else {
+          resolve(undefined)
         }
-        // Create a new ticket object with the updated status and history
-        const updatedTicket = {
-          ...tickets[ticketIndex],
-          status: status,
-          updatedAt: now,
-          statusHistory: [...(tickets[ticketIndex].statusHistory || []), statusChange],
-        }
-        // Replace the old ticket with the updated one
-        tickets[ticketIndex] = updatedTicket
-        resolve(updatedTicket)
-      } else {
-        resolve(undefined)
-      }
-    }, 500)
-  })
+      }, 500)
+    })
+  } catch (error) {
+    console.error(`Error updating ticket status for ticket ID ${id}:`, error)
+    throw new Error("Failed to update ticket status")
+  }
 }
 
 export async function assignTicket(ticketId: TicketId, userId: UserId): Promise<Ticket | undefined> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
-      const userIndex = users.findIndex((u) => u.id === userId)
-      if (ticketIndex !== -1 && userIndex !== -1) {
-        const updatedTicket = {
-          ...tickets[ticketIndex],
-          assignedTo: userId,
-          updatedAt: new Date().toISOString(),
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
+        const userIndex = users.findIndex((u) => u.id === userId)
+        if (ticketIndex !== -1 && userIndex !== -1) {
+          const updatedTicket = {
+            ...tickets[ticketIndex],
+            assignedTo: userId,
+            updatedAt: new Date().toISOString(),
+          }
+          tickets = [...tickets.slice(0, ticketIndex), updatedTicket, ...tickets.slice(ticketIndex + 1)]
+          const updatedUser = {
+            ...users[userIndex],
+            assignedTickets: [...users[userIndex].assignedTickets, ticketId],
+          }
+          users = [...users.slice(0, userIndex), updatedUser, ...users.slice(userIndex + 1)]
+          resolve({ ...updatedTicket })
+        } else {
+          resolve(undefined)
         }
-        tickets = [...tickets.slice(0, ticketIndex), updatedTicket, ...tickets.slice(ticketIndex + 1)]
-        const updatedUser = {
-          ...users[userIndex],
-          assignedTickets: [...users[userIndex].assignedTickets, ticketId],
-        }
-        users = [...users.slice(0, userIndex), updatedUser, ...users.slice(userIndex + 1)]
-        resolve({ ...updatedTicket })
-      } else {
-        resolve(undefined)
-      }
-    }, 500)
-  })
+      }, 500)
+    })
+  } catch (error) {
+    console.error(`Error assigning user ID ${userId} to ticket ID ${ticketId}:`, error)
+    throw new Error("Failed to assign user to ticket")
+  }
 }
 
 export async function addComment(ticketId: TicketId, userId: UserId, content: string): Promise<Comment> {
-  const newComment: Comment = {
-    id: Math.floor(Math.random() * 1000000),
-    ticketId,
-    author: userId,
-    content,
-    createdAt: new Date().toISOString(),
-  }
+  try {
+    const newComment: Comment = {
+      id: Math.floor(Math.random() * 1000000),
+      ticketId,
+      author: userId,
+      content,
+      createdAt: new Date().toISOString(),
+    }
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
-      if (ticketIndex !== -1) {
-        const updatedTicket = {
-          ...tickets[ticketIndex],
-          comments: [...tickets[ticketIndex].comments, newComment],
-          updatedAt: new Date().toISOString(),
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
+        if (ticketIndex !== -1) {
+          const updatedTicket = {
+            ...tickets[ticketIndex],
+            comments: [...tickets[ticketIndex].comments, newComment],
+            updatedAt: new Date().toISOString(),
+          }
+          tickets = [...tickets.slice(0, ticketIndex), updatedTicket, ...tickets.slice(ticketIndex + 1)]
         }
-        tickets = [...tickets.slice(0, ticketIndex), updatedTicket, ...tickets.slice(ticketIndex + 1)]
-      }
-      resolve({ ...newComment })
-    }, 500)
-  })
+        resolve({ ...newComment })
+      }, 500)
+    })
+  } catch (error) {
+    console.error(`Error adding comment to ticket ID ${ticketId}:`, error)
+    throw new Error("Failed to add comment")
+  }
 }
 
 export async function editComment(ticketId: TicketId, commentId: CommentId, content: string): Promise<Comment> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
-      if (ticketIndex !== -1) {
-        const commentIndex = tickets[ticketIndex].comments.findIndex((c) => c.id === commentId)
-        if (commentIndex !== -1) {
-          const updatedComment = {
-            ...tickets[ticketIndex].comments[commentIndex],
-            content,
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
+        if (ticketIndex !== -1) {
+          const commentIndex = tickets[ticketIndex].comments.findIndex((c) => c.id === commentId)
+          if (commentIndex !== -1) {
+            const updatedComment = {
+              ...tickets[ticketIndex].comments[commentIndex],
+              content,
+            }
+            tickets[ticketIndex].comments[commentIndex] = updatedComment
+            resolve({ ...updatedComment })
           }
-          tickets[ticketIndex].comments[commentIndex] = updatedComment
-          resolve({ ...updatedComment })
         }
-      }
-      resolve({ id: commentId, ticketId, author: 0, content, createdAt: new Date().toISOString() })
-    }, 500)
-  })
+        resolve({ id: commentId, ticketId, author: 0, content, createdAt: new Date().toISOString() })
+      }, 500)
+    })
+  } catch (error) {
+    console.error(`Error editing comment ID ${commentId} for ticket ID ${ticketId}:`, error)
+    throw new Error("Failed to edit comment")
+  }
 }
 
 export async function deleteComment(ticketId: TicketId, commentId: CommentId): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
-      if (ticketIndex !== -1) {
-        tickets[ticketIndex].comments = tickets[ticketIndex].comments.filter((c) => c.id !== commentId)
-      }
-      resolve()
-    }, 500)
-  })
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
+        if (ticketIndex !== -1) {
+          tickets[ticketIndex].comments = tickets[ticketIndex].comments.filter((c) => c.id !== commentId)
+        }
+        resolve()
+      }, 500)
+    })
+  } catch (error) {
+    console.error(`Error deleting comment ID ${commentId} for ticket ID ${ticketId}:`, error)
+    throw new Error("Failed to delete comment")
+  }
 }
 
 export async function submitRating(ticketId: TicketId, rating: number, feedback: string): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
-      if (ticketIndex !== -1) {
-        const updatedTicket = {
-          ...tickets[ticketIndex],
-          rating: rating,
-          updatedAt: new Date().toISOString(),
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const ticketIndex = tickets.findIndex((t) => t.id === ticketId)
+        if (ticketIndex !== -1) {
+          const updatedTicket = {
+            ...tickets[ticketIndex],
+            rating: rating,
+            updatedAt: new Date().toISOString(),
+          }
+          tickets = [...tickets.slice(0, ticketIndex), updatedTicket, ...tickets.slice(ticketIndex + 1)]
+          // In a real app, you might want to store the feedback separately
         }
-        tickets = [...tickets.slice(0, ticketIndex), updatedTicket, ...tickets.slice(ticketIndex + 1)]
-        // In a real app, you might want to store the feedback separately
-      }
-      resolve()
-    }, 500)
-  })
+        resolve()
+      }, 500)
+    })
+  } catch (error) {
+    console.error(`Error submitting rating for ticket ID ${ticketId}:`, error)
+    throw new Error("Failed to submit rating")
+  }
 }

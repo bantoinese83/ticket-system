@@ -45,6 +45,7 @@ export function CommentSection({ ticketId, comments }: CommentSectionProps) {
           description: "Your comment has been successfully added.",
         })
       } catch (error) {
+        console.error("Error adding comment:", error)
         toast({
           title: "Error",
           description: error as string,
@@ -72,6 +73,7 @@ export function CommentSection({ ticketId, comments }: CommentSectionProps) {
           description: "Your comment has been successfully updated.",
         })
       } catch (error) {
+        console.error("Error editing comment:", error)
         toast({
           title: "Error",
           description: error as string,
@@ -94,6 +96,7 @@ export function CommentSection({ ticketId, comments }: CommentSectionProps) {
         description: "Your comment has been successfully deleted.",
       })
     } catch (error) {
+      console.error("Error deleting comment:", error)
       toast({
         title: "Error",
         description: error as string,
