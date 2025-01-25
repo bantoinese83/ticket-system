@@ -1,7 +1,8 @@
-import { useAppSelector } from "../store/hooks"
+import { useSession } from "next-auth/react"
 
 export function useAuth() {
-  const currentUser = useAppSelector((state) => state.users.currentUser)
+  const { data: session } = useSession()
+  const currentUser = session?.user
 
   const isAdmin = currentUser?.role === "admin"
 

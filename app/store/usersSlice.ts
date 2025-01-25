@@ -3,6 +3,7 @@
 import {createAsyncThunk, createSlice, type PayloadAction} from "@reduxjs/toolkit"
 import {getUser, getUsers, type User, type UserId} from "../lib/api"
 import {logError} from "../utils/errorLogging"
+import { signOut } from "next-auth/react"
 
 interface UsersState {
   users: User[]
@@ -41,6 +42,10 @@ export const addUser = createAsyncThunk("users/addUser", async (userData: Omit<U
   }
 })
 
+export const signOutUser = createAsyncThunk("users/signOutUser", async () => {
+  await signOut()
+})
+
 const usersSlice = createSlice({
   name: "users",
   initialState,
@@ -71,6 +76,9 @@ const usersSlice = createSlice({
       })
       .addCase(addUser.fulfilled, (state, action: PayloadAction<User>) => {
         state.users.push(action.payload)
+      })
+      .addCase(signOutUser.fulfilled, (state) => {
+        state.currentUser = null
       })
   },
 })
