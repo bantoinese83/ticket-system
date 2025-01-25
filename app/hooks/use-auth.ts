@@ -18,4 +18,3 @@ export function useAuth() {
 
   return { currentUser, isAdmin, can }
 }
-

@@ -4,12 +4,14 @@ import {logError} from "../utils/errorLogging"
 
 interface UsersState {
   users: User[]
+  currentUser: User | null
   status: "idle" | "loading" | "succeeded" | "failed"
   error: string | null
 }
 
 const initialState: UsersState = {
   users: [],
+  currentUser: null,
   status: "idle",
   error: null,
 }
@@ -62,6 +64,7 @@ const usersSlice = createSlice({
           } else {
             state.users.push(action.payload)
           }
+          state.currentUser = action.payload
         }
       })
       .addCase(addUser.fulfilled, (state, action: PayloadAction<User>) => {
@@ -71,4 +74,3 @@ const usersSlice = createSlice({
 })
 
 export default usersSlice.reducer
-
