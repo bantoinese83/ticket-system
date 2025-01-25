@@ -53,9 +53,9 @@ export const fetchTicket = createAsyncThunk("tickets/fetchTicket", async (ticket
 
 export const updateStatus = createAsyncThunk(
   "tickets/updateStatus",
-  async ({ ticketId, status }: { ticketId: TicketId; status: TicketStatus }, { rejectWithValue }) => {
+  async ({ ticketId, status, userId }: { ticketId: TicketId; status: TicketStatus; userId: UserId }, { rejectWithValue }) => {
     try {
-      const response = await updateTicketStatus(ticketId, status)
+      const response = await updateTicketStatus(ticketId, status, userId)
       if (!response) {
         throw new Error("Failed to update ticket status")
       }
@@ -66,7 +66,6 @@ export const updateStatus = createAsyncThunk(
     }
   },
 )
-
 export const assignUser = createAsyncThunk(
   "tickets/assignUser",
   async ({ ticketId, userId }: { ticketId: TicketId; userId: UserId }, { rejectWithValue }) => {
