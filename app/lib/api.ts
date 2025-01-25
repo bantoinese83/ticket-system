@@ -271,4 +271,3 @@ export async function submitRating(ticketId: TicketId, rating: number, feedback:
     }, 500)
   })
 }
-
