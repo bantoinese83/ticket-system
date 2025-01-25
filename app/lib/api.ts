@@ -304,7 +304,7 @@ export async function deleteComment(ticketId: TicketId, commentId: CommentId): P
   }
 }
 
-export async function submitRating(ticketId: TicketId, rating: number, feedback: string): Promise<void> {
+export async function submitRating(ticketId: TicketId, rating: number): Promise<void> {
   try {
     return new Promise((resolve) => {
       setTimeout(() => {
