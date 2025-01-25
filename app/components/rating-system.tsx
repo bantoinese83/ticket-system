@@ -83,4 +83,3 @@ export function RatingSystem({ ticketId, onRatingSubmit }: RatingSystemProps) {
     </Card>
   )
 }
-

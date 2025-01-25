@@ -1,3 +1,5 @@
+"use client"
+
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import { logError } from "../utils/errorLogging"
 
@@ -75,4 +77,3 @@ const notificationsSlice = createSlice({
 })
 
 export default notificationsSlice.reducer
-

@@ -175,4 +175,3 @@ export function CommentSection({ ticketId, comments }: CommentSectionProps) {
     </div>
   )
 }
-

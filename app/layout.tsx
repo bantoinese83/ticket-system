@@ -1,3 +1,5 @@
+"use client"
+
 import { Inter } from "next/font/google"
 import { Provider } from "react-redux"
 import { store } from "./store/store"
@@ -39,4 +41,3 @@ export default function RootLayout({
     </html>
   )
 }
-
