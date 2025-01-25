@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "../store/hooks"
-import { fetchUsers, addUser } from "../store/usersSlice"
+import { fetchUsers, addUser, updateUser, deleteUser } from "../store/usersSlice"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -66,11 +66,38 @@ export function UserManagement() {
   }
 
   const handleUpdateUser = async () => {
-    // Implement update user logic here
+    if (editingUser) {
+      try {
+        await dispatch(updateUser(editingUser)).unwrap()
+        setEditingUser(null)
+        toast({
+          title: "User Updated",
+          description: "User details have been successfully updated.",
+        })
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error as string,
+          variant: "destructive",
+        })
+      }
+    }
   }
 
   const handleDeleteUser = async (userId: number) => {
-    // Implement delete user logic here
+    try {
+      await dispatch(deleteUser(userId)).unwrap()
+      toast({
+        title: "User Deleted",
+        description: "User has been successfully deleted.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error as string,
+        variant: "destructive",
+      })
+    }
   }
 
   return (
