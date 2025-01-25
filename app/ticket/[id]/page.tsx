@@ -1,148 +1,168 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/router"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchTicket, updateStatus, assignUser, addComment, deleteComment } from "@/store/ticketsSlice"
+import { fetchTicket, updateStatus, assignUser, addComment, deleteComment, editComment } from "@/store/ticketsSlice"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
+import { Pencil, Trash2 } from "lucide-react"
+import { CommentSection } from "@/components/comment-section"
+import { StatusHistory } from "@/components/status-history"
+import { RatingSystem } from "@/components/rating-system"
+import { TicketId, UserId, CommentId, TicketStatus } from "@/lib/api"
 
-const commentSchema = z.object({
-  content: z.string().min(1, "Comment is required"),
-})
+interface TicketPageProps {
+  id: TicketId
+}
 
-export default function TicketPage() {
-  const router = useRouter()
-  const { id } = router.query
+export default function TicketPage({ id }: TicketPageProps) {
   const dispatch = useAppDispatch()
+  const router = useRouter()
   const { toast } = useToast()
-  const ticket = useAppSelector((state) => state.tickets.tickets.find((t) => t.id === Number(id)))
-  const [isLoading, setIsLoading] = useState(false)
-  const [isAssigning, setIsAssigning] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
-  const [isAddingComment, setIsAddingComment] = useState(false)
-  const [assignedUserId, setAssignedUserId] = useState<number | null>(null)
-  const [status, setStatus] = useState<string | null>(null)
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm({
-    resolver: zodResolver(commentSchema),
-  })
+  const ticket = useAppSelector((state) => state.tickets.tickets.find((t) => t.id === id))
+  const [newComment, setNewComment] = useState("")
+  const [editingCommentId, setEditingCommentId] = useState<CommentId | null>(null)
+  const [editedContent, setEditedContent] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [status, setStatus] = useState<TicketStatus>("open")
+  const [assignedUser, setAssignedUser] = useState<UserId | null>(null)
 
   useEffect(() => {
-    if (id) {
-      setIsLoading(true)
-      dispatch(fetchTicket(Number(id)))
-        .unwrap()
-        .finally(() => setIsLoading(false))
+    if (!ticket) {
+      dispatch(fetchTicket(id))
     }
-  }, [id, dispatch])
+  }, [id, ticket, dispatch])
 
-  const handleAssignUser = async () => {
-    if (assignedUserId !== null) {
-      setIsAssigning(true)
-      try {
-        await dispatch(assignUser({ ticketId: Number(id), userId: assignedUserId })).unwrap()
-        toast({
-          title: "User Assigned",
-          description: "User has been successfully assigned to the ticket.",
-        })
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: error as string,
-          variant: "destructive",
-        })
-      } finally {
-        setIsAssigning(false)
-      }
-    }
-  }
-
-  const handleUpdateStatus = async () => {
-    if (status !== null) {
-      setIsUpdatingStatus(true)
-      try {
-        await dispatch(updateStatus({ ticketId: Number(id), status: status as any, userId: 1 })).unwrap()
-        toast({
-          title: "Status Updated",
-          description: "Ticket status has been successfully updated.",
-        })
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: error as string,
-          variant: "destructive",
-        })
-      } finally {
-        setIsUpdatingStatus(false)
-      }
-    }
-  }
-
-  const handleAddComment = async (data: { content: string }) => {
-    setIsAddingComment(true)
-    try {
-      await dispatch(addComment({ ticketId: Number(id), userId: 1, content: data.content })).unwrap()
-      reset()
-      toast({
-        title: "Comment Added",
-        description: "Your comment has been successfully added.",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error as string,
-        variant: "destructive",
-      })
-    } finally {
-      setIsAddingComment(false)
-    }
-  }
-
-  const handleDeleteComment = async (commentId: number) => {
-    setIsDeleting(true)
-    try {
-      await dispatch(deleteComment({ ticketId: Number(id), commentId })).unwrap()
-      toast({
-        title: "Comment Deleted",
-        description: "Comment has been successfully deleted.",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error as string,
-        variant: "destructive",
-      })
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const handleSuggestSolutions = () => {
-    // Implement the logic to suggest solutions
-  }
+  const handleSuggestSolutions = useCallback(() => {
+    // Implement the logic to suggest solutions here
+  }, [])
 
   useEffect(() => {
     handleSuggestSolutions()
   }, [handleSuggestSolutions])
 
-  if (isLoading) {
-    return <div>Loading...</div>
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newComment.trim()) {
+      setIsSubmitting(true)
+      try {
+        const currentUserId: UserId = 1 // This is a placeholder
+        await dispatch(
+          addComment({
+            ticketId: id,
+            userId: currentUserId,
+            content: newComment,
+          }),
+        ).unwrap()
+        setNewComment("")
+        toast({
+          title: "Comment Added",
+          description: "Your comment has been successfully added.",
+        })
+      } catch (error) {
+        console.error("Error adding comment:", error)
+        toast({
+          title: "Error",
+          description: error as string,
+          variant: "destructive",
+        })
+      } finally {
+        setIsSubmitting(false)
+      }
+    }
+  }
+
+  const handleEditComment = async (commentId: CommentId) => {
+    if (editedContent.trim()) {
+      try {
+        await dispatch(
+          editComment({
+            ticketId: id,
+            commentId,
+            content: editedContent,
+          }),
+        ).unwrap()
+        setEditingCommentId(null)
+        toast({
+          title: "Comment Updated",
+          description: "Your comment has been successfully updated.",
+        })
+      } catch (error) {
+        console.error("Error editing comment:", error)
+        toast({
+          title: "Error",
+          description: error as string,
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  const handleDeleteComment = async (commentId: CommentId) => {
+    try {
+      await dispatch(
+        deleteComment({
+          ticketId: id,
+          commentId,
+        }),
+      ).unwrap()
+      toast({
+        title: "Comment Deleted",
+        description: "Your comment has been successfully deleted.",
+      })
+    } catch (error) {
+      console.error("Error deleting comment:", error)
+      toast({
+        title: "Error",
+        description: error as string,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleUpdateStatus = async (newStatus: TicketStatus) => {
+    try {
+      const currentUserId: UserId = 1 // This is a placeholder
+      await dispatch(updateStatus({ ticketId: id, status: newStatus, userId: currentUserId })).unwrap()
+      setStatus(newStatus)
+      toast({
+        title: "Status Updated",
+        description: `Ticket status has been updated to ${newStatus}.`,
+      })
+    } catch (error) {
+      console.error("Error updating status:", error)
+      toast({
+        title: "Error",
+        description: error as string,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleAssignUser = async (userId: UserId) => {
+    try {
+      await dispatch(assignUser({ ticketId: id, userId })).unwrap()
+      setAssignedUser(userId)
+      toast({
+        title: "User Assigned",
+        description: "User has been successfully assigned to the ticket.",
+      })
+    } catch (error) {
+      console.error("Error assigning user:", error)
+      toast({
+        title: "Error",
+        description: error as string,
+        variant: "destructive",
+      })
+    }
   }
 
   if (!ticket) {
-    return <div>Ticket not found</div>
+    return <div>Loading...</div>
   }
 
   return (
@@ -156,74 +176,30 @@ export default function TicketPage() {
           <p>Status: {ticket.status}</p>
           <p>Priority: {ticket.priority}</p>
           <p>Location: {ticket.location}</p>
-          <p>Reported by: {ticket.reportedBy}</p>
-          <p>Assigned to: {ticket.assignedTo}</p>
+          <p>Reported by: User {ticket.reportedBy}</p>
+          <p>Assigned to: {ticket.assignedTo ? `User ${ticket.assignedTo}` : "Unassigned"}</p>
           <p>Created at: {new Date(ticket.createdAt).toLocaleString()}</p>
           <p>Updated at: {new Date(ticket.updatedAt).toLocaleString()}</p>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Assign User</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <input
-            type="number"
-            value={assignedUserId ?? ""}
-            onChange={(e) => setAssignedUserId(Number(e.target.value))}
-            placeholder="Enter user ID"
-          />
-          <Button onClick={handleAssignUser} disabled={isAssigning}>
-            {isAssigning ? "Assigning..." : "Assign User"}
-          </Button>
-        </CardContent>
-      </Card>
+      <CommentSection ticketId={id} comments={ticket.comments} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Update Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <select value={status ?? ""} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Select status</option>
-            <option value="open">Open</option>
-            <option value="in-progress">In Progress</option>
-            <option value="resolved">Resolved</option>
-          </select>
-          <Button onClick={handleUpdateStatus} disabled={isUpdatingStatus}>
-            {isUpdatingStatus ? "Updating..." : "Update Status"}
-          </Button>
-        </CardContent>
-      </Card>
+      <StatusHistory history={ticket.statusHistory} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Comments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {ticket.comments.map((comment) => (
-            <div key={comment.id} className="mb-4">
-              <p>{comment.content}</p>
-              <p>By: {comment.author}</p>
-              <p>At: {new Date(comment.createdAt).toLocaleString()}</p>
-              <Button onClick={() => handleDeleteComment(comment.id)} disabled={isDeleting}>
-                {isDeleting ? "Deleting..." : "Delete Comment"}
-              </Button>
-            </div>
-          ))}
-          <form onSubmit={handleSubmit(handleAddComment)} className="space-y-2">
-            <Textarea
-              placeholder="Add a comment..."
-              {...register("content")}
-            />
-            {errors.content && <p className="text-red-500">{errors.content.message}</p>}
-            <Button type="submit" disabled={isAddingComment}>
-              {isAddingComment ? "Adding..." : "Add Comment"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <RatingSystem ticketId={id} onRatingSubmit={() => {}} />
+
+      <form onSubmit={handleSubmitComment} className="space-y-2">
+        <Textarea
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Add a comment..."
+          className="w-full"
+        />
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Posting..." : "Post Comment"}
+        </Button>
+      </form>
     </div>
   )
 }
