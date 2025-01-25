@@ -12,10 +12,6 @@ import React from "react";
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = {
-  title: "Accessibility Issue Ticketing System",
-  description: "A system for tracking and resolving accessibility issues",
-}
 
 export default function RootLayout({
   children,
