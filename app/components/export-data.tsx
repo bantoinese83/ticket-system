@@ -4,9 +4,9 @@ import { useState } from "react"
 import { useAppSelector } from "../store/hooks"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
 import { Download } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
 
 export function ExportData() {
   const tickets = useAppSelector((state) => state.tickets.tickets)

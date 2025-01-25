@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAppDispatch } from "../store/hooks"
 import { addComment, editComment, deleteComment } from "../store/ticketsSlice"
 import type { Comment, TicketId, UserId, CommentId } from "../lib/api"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent } from "@/components/ui/card"
 import { Pencil, Trash2 } from "lucide-react"
 

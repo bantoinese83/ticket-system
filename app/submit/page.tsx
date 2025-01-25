@@ -8,10 +8,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { submitTicket } from "../lib/api"
 import { enhanceTicketDescription, analyzeScreenshot } from "../utils/geminiApi"
-import { useToast } from "@/components/ui/use-toast"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { useToast } from "@/hooks/use-toast"
 
 const ticketSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -26,6 +26,7 @@ export default function SubmitTicket() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(ticketSchema),
@@ -46,7 +47,7 @@ export default function SubmitTicket() {
         description: "Your accessibility issue has been successfully reported.",
       })
       router.push("/")
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to submit ticket. Please try again.",
@@ -65,7 +66,7 @@ export default function SubmitTicket() {
           title: "Description Enhanced",
           description: "The ticket description has been enhanced with AI assistance.",
         })
-      } catch (error) {
+      } catch {
         toast({
           title: "Enhancement Failed",
           description: "Failed to enhance description. Please review manually.",
@@ -92,7 +93,7 @@ export default function SubmitTicket() {
           })
         }
         reader.readAsDataURL(screenshot)
-      } catch (error) {
+      } catch {
         toast({
           title: "Analysis Failed",
           description: "Failed to analyze screenshot. Please review manually.",
