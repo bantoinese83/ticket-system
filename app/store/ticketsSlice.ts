@@ -1,3 +1,5 @@
+"use client"
+
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import {
   type Ticket,
@@ -224,4 +226,3 @@ const ticketsSlice = createSlice({
 })
 
 export default ticketsSlice.reducer
-

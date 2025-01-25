@@ -1,3 +1,5 @@
+"use client"
+
 import {createAsyncThunk, createSlice, type PayloadAction} from "@reduxjs/toolkit"
 import {getUser, getUsers, type User, type UserId} from "../lib/api"
 import {logError} from "../utils/errorLogging"
