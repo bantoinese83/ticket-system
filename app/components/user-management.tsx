@@ -23,16 +23,10 @@ const userSchema = z.object({
 
 export function UserManagement() {
   const { can } = useAuth()
-
-  if (!can("manage_users")) {
-    return <div>You do not have permission to manage users.</div>
-  }
-
   const dispatch = useAppDispatch()
   const users = useAppSelector((state) => state.users.users)
   const status = useAppSelector((state) => state.users.status)
   const { toast } = useToast()
-
   const [editingUser, setEditingUser] = useState<User | null>(null)
 
   const {
@@ -49,6 +43,10 @@ export function UserManagement() {
       dispatch(fetchUsers())
     }
   }, [status, dispatch])
+
+  if (!can("manage_users")) {
+    return <div>You do not have permission to manage users.</div>
+  }
 
   const handleAddUser = async (data) => {
     try {

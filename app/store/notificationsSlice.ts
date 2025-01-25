@@ -1,7 +1,6 @@
 "use client"
 
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
-import { logError } from "../utils/errorLogging"
 
 export interface Notification {
   id: string

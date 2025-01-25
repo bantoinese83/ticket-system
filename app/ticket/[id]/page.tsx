@@ -1,229 +1,229 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useRouter } from "next/router"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchTicket, updateStatus, assignUser, addComment, deleteComment } from "@/store/ticketsSlice"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAppDispatch, useAppSelector } from "../../store/hooks"
-import { fetchTicket, updateStatus, assignUser } from "../../store/ticketsSlice"
-import { fetchUsers } from "../../store/usersSlice"
-import { CommentSection } from "../../components/comment-section"
-import { RatingSystem } from "../../components/rating-system"
-import { StatusHistory } from "../../components/status-history"
-import { suggestSolutions } from "../../utils/geminiApi"
-import type { TicketStatus, UserId } from "../../lib/api"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/components/ui/use-toast"
-import { ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/hooks/use-toast"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 
-export default function TicketDetail() {
-  const params = useParams()
+const commentSchema = z.object({
+  content: z.string().min(1, "Comment is required"),
+})
+
+export default function TicketPage() {
   const router = useRouter()
+  const { id } = router.query
   const dispatch = useAppDispatch()
   const { toast } = useToast()
-  const ticket = useAppSelector((state) => state.tickets.tickets.find((t) => t.id === Number(params.id)))
-  const users = useAppSelector((state) => state.users.users)
-  const ticketStatus = useAppSelector((state) => state.tickets.status)
-  const usersStatus = useAppSelector((state) => state.users.status)
-  const ticketError = useAppSelector((state) => state.tickets.error)
-  const usersError = useAppSelector((state) => state.users.error)
-  const [suggestedSolutions, setSuggestedSolutions] = useState("")
-  const [isLoadingSolutions, setIsLoadingSolutions] = useState(false)
+  const ticket = useAppSelector((state) => state.tickets.tickets.find((t) => t.id === Number(id)))
+  const [isLoading, setIsLoading] = useState(false)
+  const [isAssigning, setIsAssigning] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [isAddingComment, setIsAddingComment] = useState(false)
+  const [assignedUserId, setAssignedUserId] = useState<number | null>(null)
+  const [status, setStatus] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: zodResolver(commentSchema),
+  })
 
   useEffect(() => {
-    if (params.id) {
-      dispatch(fetchTicket(Number(params.id)))
-      dispatch(fetchUsers())
+    if (id) {
+      setIsLoading(true)
+      dispatch(fetchTicket(Number(id)))
+        .unwrap()
+        .finally(() => setIsLoading(false))
     }
-  }, [dispatch, params.id])
+  }, [id, dispatch])
 
-  useEffect(() => {
-    if (ticket && !suggestedSolutions) {
-      handleSuggestSolutions()
-    }
-  }, [ticket, suggestedSolutions]) // Added suggestedSolutions to dependencies
-
-  const handleStatusChange = async (newStatus: TicketStatus) => {
-    if (ticket) {
+  const handleAssignUser = async () => {
+    if (assignedUserId !== null) {
+      setIsAssigning(true)
       try {
-        await dispatch(updateStatus({ ticketId: ticket.id, status: newStatus })).unwrap()
-        toast({
-          title: "Status Updated",
-          description: `Ticket status updated to ${newStatus}`,
-        })
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: error as string,
-          variant: "destructive",
-        })
-      }
-    }
-  }
-
-  const handleAssignUser = async (userId: UserId) => {
-    if (ticket) {
-      try {
-        await dispatch(assignUser({ ticketId: ticket.id, userId })).unwrap()
+        await dispatch(assignUser({ ticketId: Number(id), userId: assignedUserId })).unwrap()
         toast({
           title: "User Assigned",
-          description: "Ticket assigned successfully",
+          description: "User has been successfully assigned to the ticket.",
         })
       } catch (error) {
         toast({
           title: "Error",
           description: error as string,
-          variant: "destructive",
-        })
-      }
-    }
-  }
-
-  const handleRatingSubmit = () => {
-    toast({
-      title: "Rating Submitted",
-      description: "Thank you for your feedback!",
-    })
-  }
-
-  const handleSuggestSolutions = async () => {
-    if (ticket) {
-      setIsLoadingSolutions(true)
-      try {
-        const solutions = await suggestSolutions(ticket.description)
-        setSuggestedSolutions(solutions)
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to generate solution suggestions",
           variant: "destructive",
         })
       } finally {
-        setIsLoadingSolutions(false)
+        setIsAssigning(false)
       }
     }
   }
 
-  if (ticketStatus === "loading" || usersStatus === "loading") {
-    return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-8 w-2/3" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-2/3" />
-        </CardContent>
-      </Card>
-    )
+  const handleUpdateStatus = async () => {
+    if (status !== null) {
+      setIsUpdatingStatus(true)
+      try {
+        await dispatch(updateStatus({ ticketId: Number(id), status: status as any, userId: 1 })).unwrap()
+        toast({
+          title: "Status Updated",
+          description: "Ticket status has been successfully updated.",
+        })
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error as string,
+          variant: "destructive",
+        })
+      } finally {
+        setIsUpdatingStatus(false)
+      }
+    }
   }
 
-  if (ticketError || usersError) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{ticketError || usersError}</AlertDescription>
-      </Alert>
-    )
+  const handleAddComment = async (data: { content: string }) => {
+    setIsAddingComment(true)
+    try {
+      await dispatch(addComment({ ticketId: Number(id), userId: 1, content: data.content })).unwrap()
+      reset()
+      toast({
+        title: "Comment Added",
+        description: "Your comment has been successfully added.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error as string,
+        variant: "destructive",
+      })
+    } finally {
+      setIsAddingComment(false)
+    }
   }
 
-  if (!ticket)
-    return (
-      <Alert>
-        <AlertTitle>Not Found</AlertTitle>
-        <AlertDescription>The requested ticket could not be found.</AlertDescription>
-      </Alert>
-    )
+  const handleDeleteComment = async (commentId: number) => {
+    setIsDeleting(true)
+    try {
+      await dispatch(deleteComment({ ticketId: Number(id), commentId })).unwrap()
+      toast({
+        title: "Comment Deleted",
+        description: "Comment has been successfully deleted.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error as string,
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleSuggestSolutions = () => {
+    // Implement the logic to suggest solutions
+  }
+
+  useEffect(() => {
+    handleSuggestSolutions()
+  }, [handleSuggestSolutions])
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (!ticket) {
+    return <div>Ticket not found</div>
+  }
 
   return (
     <div className="space-y-4">
-      <Button variant="outline" onClick={() => router.push("/dashboard")} className="mb-4">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
-      </Button>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">{ticket.title}</CardTitle>
+          <CardTitle>{ticket.title}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-muted-foreground">{ticket.description}</p>
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-            <span className="text-sm">{ticket.location}</span>
-            <Badge
-              variant={
-                ticket.status === "open" ? "destructive" : ticket.status === "in-progress" ? "default" : "secondary"
-              }
-            >
-              {ticket.status}
-            </Badge>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Reported on: {new Date(ticket.createdAt).toLocaleDateString()}
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <span className="text-sm font-medium">Status:</span>
-            <Select onValueChange={(value) => handleStatusChange(value as TicketStatus)} defaultValue={ticket.status}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <span className="text-sm font-medium">Assigned to:</span>
-            <Select
-              onValueChange={(value) => handleAssignUser(Number(value) as UserId)}
-              defaultValue={ticket.assignedTo?.toString() || ""}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Assign user" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id.toString()}>
-                    {user.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {ticket.statusHistory && ticket.statusHistory.length > 0 && (
-            <div className="mt-6">
-              <StatusHistory history={ticket.statusHistory} />
-            </div>
-          )}
-          <Card>
-            <CardHeader>
-              <CardTitle>AI-Suggested Solutions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingSolutions ? (
-                <Skeleton className="h-20 w-full" />
-              ) : (
-                <p>{suggestedSolutions || "No suggestions available."}</p>
-              )}
-              <Button onClick={handleSuggestSolutions} disabled={isLoadingSolutions} className="mt-4">
-                {isLoadingSolutions ? "Generating..." : "Regenerate Suggestions"}
+        <CardContent>
+          <p>{ticket.description}</p>
+          <p>Status: {ticket.status}</p>
+          <p>Priority: {ticket.priority}</p>
+          <p>Location: {ticket.location}</p>
+          <p>Reported by: {ticket.reportedBy}</p>
+          <p>Assigned to: {ticket.assignedTo}</p>
+          <p>Created at: {new Date(ticket.createdAt).toLocaleString()}</p>
+          <p>Updated at: {new Date(ticket.updatedAt).toLocaleString()}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Assign User</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <input
+            type="number"
+            value={assignedUserId ?? ""}
+            onChange={(e) => setAssignedUserId(Number(e.target.value))}
+            placeholder="Enter user ID"
+          />
+          <Button onClick={handleAssignUser} disabled={isAssigning}>
+            {isAssigning ? "Assigning..." : "Assign User"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Update Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <select value={status ?? ""} onChange={(e) => setStatus(e.target.value)}>
+            <option value="">Select status</option>
+            <option value="open">Open</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <Button onClick={handleUpdateStatus} disabled={isUpdatingStatus}>
+            {isUpdatingStatus ? "Updating..." : "Update Status"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Comments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {ticket.comments.map((comment) => (
+            <div key={comment.id} className="mb-4">
+              <p>{comment.content}</p>
+              <p>By: {comment.author}</p>
+              <p>At: {new Date(comment.createdAt).toLocaleString()}</p>
+              <Button onClick={() => handleDeleteComment(comment.id)} disabled={isDeleting}>
+                {isDeleting ? "Deleting..." : "Delete Comment"}
               </Button>
-            </CardContent>
-          </Card>
-          <CommentSection ticketId={ticket.id} comments={ticket.comments} />
-          {ticket.status === "resolved" && !ticket.rating && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">Rate Resolution</h3>
-              <RatingSystem ticketId={ticket.id} onRatingSubmit={handleRatingSubmit} />
             </div>
-          )}
+          ))}
+          <form onSubmit={handleSubmit(handleAddComment)} className="space-y-2">
+            <Textarea
+              placeholder="Add a comment..."
+              {...register("content")}
+            />
+            {errors.content && <p className="text-red-500">{errors.content.message}</p>}
+            <Button type="submit" disabled={isAddingComment}>
+              {isAddingComment ? "Adding..." : "Add Comment"}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
   )
 }
-
